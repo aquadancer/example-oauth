@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+    app:
+        build:
+            context: ./docker/php
+        volumes:
+            - './:/var/www/html'
+        networks:
+            - app-network
+
+    # Nginx веб-сервер
+    web:
+        image: 'nginx:alpine'
+        ports:
+            - '80:80'
+        volumes:
+            - './:/var/www/html'
+            - './docker/nginx/default.conf:/etc/nginx/conf.d/default.conf'
+        depends_on:
+            - app
+        networks:
+            - app-network
+
+    db:
+        image: 'postgres:13'
+        environment:
+            POSTGRES_DB: ${DB_DATABASE}
+            POSTGRES_USER: ${DB_USERNAME}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+        volumes:
+            - 'db-data:/var/lib/postgresql/data'
+        networks:
+            - app-network
+
+    pgadmin:
+        image: 'dpage/pgadmin4'
+        environment:
+            PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+            PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+        ports:
+            - '5050:80'
+        depends_on:
+            - db
+        networks:
+            - app-network
+
+    # Redis
+    redis:
+        image: 'redis:alpine'
+        networks:
+            - app-network
+
+# Определение томов
+volumes:
+    db-data:
+
+# Определение сетей
+networks:
+    app-network:
+        driver: bridge
